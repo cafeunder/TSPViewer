@@ -1,32 +1,52 @@
 import os
 import sys
+import numpy as np
+from calc_tour_length import calc_tour_length
 from tsp_file_util import *
 from PIL import Image, ImageDraw, ImageFont
 
 
-def tour_plot_pil(tsp_file_name, tour_file_name, number, index, length):
-    tsp = read_tsp_file(tsp_file_name)
+def tour_plot_pil(tsp_file_name, tour_file_name, number, index):
+    tsp = np.array(read_tsp_file(tsp_file_name))
     tour = read_tour_file(tour_file_name)
     base, _ = os.path.splitext(tour_file_name)
 
-    tour_coord_x = []
-    tour_coord_y = []
-    for city in tour:
-        tour_coord_x.append(tsp[city][0])
-        tour_coord_y.append(tsp[city][1])
+    xmax = tsp[:, :1].max()
+    xmin = tsp[:, :1].min()
+    ymax = tsp[:, 1:].max()
+    ymin = tsp[:, 1:].min()
+
+    width = xmax - xmin
+    height = ymax - ymin
+    rate = height
+    if width < height:
+        rate = width
+
+    tsp[:, :1] -= xmin
+    tsp[:, 1:] -= ymin
+    tsp[:, :1] /= rate
+    tsp[:, 1:] /= rate
+    tsp[:, :1] *= 756
+    tsp[:, 1:] *= 756
+
+    xmax = tsp[:, :1].max()
+    ymax = tsp[:, 1:].max()
 
     canvas = Image.new('RGB', (756, 1024), (255, 255, 255))
     draw = ImageDraw.Draw(canvas)
 
-    s = 1.95
+    count = 0
+    s = 1
     prev = tour[len(tour) - 1]
+    # 17000
     for city in tour:
         draw.line((tsp[prev][0] / s, tsp[prev][1] / s, tsp[city][0] / s, tsp[city][1] / s), fill=(10, 10, 10))
         prev = city
 
     font = ImageFont.truetype("/usr/share/fonts/truetype/lato/Lato-Medium.ttf", 32)
-    draw.text((420, 835), "2-Opt: " + str(number), fill="#000", font=font)
-    draw.text((420, 875), "length: " + str(length), fill="#000", font=font)
+    # font = ImageFont.truetype("calibri.ttf", 32)
+    draw.text((100, 835), "2-Opt: " + str(number), fill="#000", font=font)
+    draw.text((100, 875), "length: " + str(calc_tour_length(tsp_file_name, tour_file_name)), fill="#000", font=font)
 
     if not os.path.exists("png"):
         os.mkdir("png")
@@ -44,7 +64,7 @@ def make_video(tsp_file_path, tour_dir_path):
     number_list.sort()
     for number in number_list:
         print(tour_dir_path + "/" + str(number) + ".tour")
-        tour_plot_pil(tsp_file_path, tour_dir_path + "/" + str(number) + ".tour", number, index, 0)
+        tour_plot_pil(tsp_file_path, tour_dir_path + "/" + str(number) + ".tour", number, index)
         index += 1
 
 
@@ -52,4 +72,3 @@ if __name__ == "__main__":
     make_video(sys.argv[1], sys.argv[2])
     os.system('ffmpeg -framerate 40 -i png/%d.png -vcodec libx264 -pix_fmt yuv420p -r 40 out.mp4')
     os.system('rm png/*')
-

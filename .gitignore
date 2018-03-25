@@ -160,6 +160,7 @@ fabric.properties
 /CartPole_v0/data
 *.pdf
 *.png
-/tour
 /data
 *.mp4
+*.tsp
+*.tour

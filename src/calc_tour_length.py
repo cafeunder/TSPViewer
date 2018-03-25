@@ -15,8 +15,8 @@ def calc_tour_length(tsp_file_path, tour_file_path):
         dy = tsp[prev][1] - tsp[city][1]
         length += int(math.sqrt(dx * dx + dy * dy) + 0.5)
         prev = city
-    print(length)
+    return length
 
 
 if __name__ == "__main__":
-    calc_tour_length(sys.argv[1], sys.argv[2])
+    print(calc_tour_length(sys.argv[1], sys.argv[2]))
