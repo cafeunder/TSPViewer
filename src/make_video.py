@@ -7,32 +7,35 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 def tour_plot_pil(tsp_file_name, tour_file_name, number, index):
+    SCREEN_WIDTH = 756
+    SCREEN_HEIGHT = 1024
+    MARGIN = 20
+    TSP_WIDTH = SCREEN_WIDTH - (MARGIN * 2)
+    TSP_HEIGHT = SCREEN_HEIGHT - (MARGIN * 2)
+
     tsp = np.array(read_tsp_file(tsp_file_name))
     tour = read_tour_file(tour_file_name)
     base, _ = os.path.splitext(tour_file_name)
 
-    xmax = tsp[:, :1].max()
     xmin = tsp[:, :1].min()
-    ymax = tsp[:, 1:].max()
     ymin = tsp[:, 1:].min()
-
-    width = xmax - xmin
-    height = ymax - ymin
-    rate = height
-    if width < height:
-        rate = width
 
     tsp[:, :1] -= xmin
     tsp[:, 1:] -= ymin
-    tsp[:, :1] /= rate
-    tsp[:, 1:] /= rate
-    tsp[:, :1] *= 756
-    tsp[:, 1:] *= 756
-
     xmax = tsp[:, :1].max()
     ymax = tsp[:, 1:].max()
 
-    canvas = Image.new('RGB', (756, 1024), (255, 255, 255))
+    if TSP_HEIGHT / TSP_WIDTH < ymax / xmax:
+        tsp[:, :1] = tsp[:, :1] / ymax * TSP_HEIGHT
+        tsp[:, 1:] = tsp[:, 1:] / ymax * TSP_HEIGHT
+    else:
+        tsp[:, :1] = tsp[:, :1] / xmax * TSP_WIDTH
+        tsp[:, 1:] = tsp[:, 1:] / xmax * TSP_WIDTH
+
+    tsp[:, :1] += MARGIN
+    tsp[:, 1:] += MARGIN
+
+    canvas = Image.new('RGB', (SCREEN_WIDTH, SCREEN_HEIGHT), (255, 255, 255))
     draw = ImageDraw.Draw(canvas)
 
     count = 0
@@ -70,5 +73,5 @@ def make_video(tsp_file_path, tour_dir_path):
 
 if __name__ == "__main__":
     make_video(sys.argv[1], sys.argv[2])
-    os.system('ffmpeg -framerate 40 -i png/%d.png -vcodec libx264 -pix_fmt yuv420p -r 40 out.mp4')
+    os.system('ffmpeg -framerate 40 -i png/%d.png -vcodec libx264 -pix_fmt yuv420p -r 40 out.mp4 -y')
     os.system('rm png/*')
